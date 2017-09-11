@@ -47,6 +47,7 @@ new_simulation
 
 '''
 # Imports
+import sys
 from math import sin, cos, tan, radians, sqrt
 import pyopencl as cl
 import numpy as np
@@ -108,7 +109,7 @@ class all:
             self.queue.finish()              
 
             # Run Kernel
-            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, sim.dt, sim.iter_nth)
+            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, sim.num_coils, sim.dt, sim.iter_nth)
 
             print "Values successfull passed"
             
@@ -131,10 +132,10 @@ class all:
             
     
     class _SIMOBJECT:
-        def __init__(self, positions, velocities, coils, num_particles, steps, bytesize=4, iter_nth = 1, dt = .0000000000002 ):
+        def __init__(self, positions, velocities, coils, num_particles, steps, bytesize=4, iter_nth = 1, dt = .0000000000002, num_coils = 2):
             self.positions = positions.astype(np.float64)
             self.velocities = velocities.astype(np.float64)
-            self.coils = np.array(coils)
+            self.coils = np.array(coils).flatten()
             self.num_particles = np.int32(num_particles)
             self.num_steps = np.int32(steps)
             self.bytesize = bytesize
@@ -143,6 +144,8 @@ class all:
             
             self.dt = np.float64(dt)
             self.iter_nth = np.int32(iter_nth)
+            
+            self.num_coils = np.int32(num_coils)
             
             
             
@@ -196,90 +199,20 @@ class all:
        
         
         
+    def get_conf_times(self, r_vals, radius, z_pos, dt, iter_nth) :
+        
+        conf_times = []      
+        
+        for p in range(len(r_vals)) :
+            x_conf = len(np.where( abs(r_vals[p][:,0]) < radius)[0]) * dt * iter_nth * 1e9
+            y_conf = len(np.where( abs(r_vals[p][:,1]) < radius)[0]) * dt * iter_nth * 1e9
+            z_conf = len(np.where( abs((z_pos/2.0) - r_vals[p][:,2]) < (z_pos/2.0))[0]) * dt * iter_nth * 1e9
+            
+            conf_times.append(np.amin([x_conf,y_conf,z_conf]))            
+        
+        return conf_times
             
             
-    def EGUNvsDIST(self):
-        '''
-        Simulation 1:
-            The electron gun object is marched away from the coils. At each dL 
-            slice, cone angle is simulated 
-
-        Hypothesis:
-            Capture time increases with larger values of L with a         
-        '''
-        # Generate standard coils
-        coil_1 = self._COIL( radius = .035, current = 10000, z_pos = 0.0 ).arr
-        coil_2 = self._COIL( radius = .035, current = -10000, z_pos = 0.05 ).arr   
-        coils = [coil_1, coil_2]
-        
-        beam_energy = 0 # converted beam energy to velocity
-        avg_e_v = 1e6        
-        
-        # Slicing Parameters
-        num_L_slices = 20
-        L_dim = [-0.0001, -.035] # Starting and stopping distance for the electron gun march
-        
-        num_E_per_slice = 30
-        cone_theta = radians(1.0) # Constant cone size of 15deg
-    
-        
-        # Generate list of 
-        
-        L_array = np.linspace(L_dim[0], L_dim[1], num_L_slices) # Electron gun positions
-        
-        # This code snippet creates the starting offset based on the cone and angle position.
-        # To see a demo of the radius over time simply plt.plot(Flat_r_by_l) and use plt.ylim(ymax = coil_1.radius) for scale
-        self.Flat_r_by_l = []
-        for i in range(len(L_array)):
-            self.Flat_r_by_l.extend(np.linspace(0.0001, -1.0 * L_array[i] * tan(cone_theta), num_E_per_slice))
-         
-        # Settings the positions for each electron.... must wipe the x comp later    
-        # Generated as l, r, 0, 0 
-        positions = []            
-        for i in range(num_L_slices):
-            for o in range(num_E_per_slice):                
-                positions.extend([L_array[i], self.Flat_r_by_l[(i*num_L_slices + o)], 0.0, 0.0])
-
-        velocities = np.ndarray((num_L_slices * num_E_per_slice, 4))
-        p = np.asarray(positions).reshape((num_L_slices * num_E_per_slice, 4))
-        
-        for i in range(( len(positions)/4 ) ):
-            #l = positions[i]
-            #r = positions[i+1]
-            l = p[i][0]
-            r = p[i][1]            
-            
-            v_y = 1.0 / sqrt( (r*r/ l*l) + 1.0) * avg_e_v
-            v_z =  r / (l* sqrt( (r*r/ l*l) + 1.0)) * avg_e_v
-            
-            velocities[i] = [0.0, v_y, v_z, 0.0]
-
-        v = np.asarray(velocities).reshape((num_L_slices * num_E_per_slice, 4))            
-        
-        # 400000 particles returning r over time
-        self.EGUNvsDIST = self._SIMOBJECT(p,v, coils, num_L_slices * num_E_per_slice, 150000)
-        self.EGUNvsDIST.ee_table = ellipe_table.astype(np.float32)
-        self.EGUNvsDIST.ek_table = ellipk_table.astype(np.float32)
- 
-        
-        calculator = self._GPU(path_to_integrator)
-
-        
-        self.EGUNvsDIST.r_vals = calculator.execute( self.EGUNvsDIST)
-        
-        self.avg_r_vals = []
-        self.sum_r_vals = []
-        for i in self.EGUNvsDIST.r_vals:
-            self.avg_r_vals.append(np.mean(i))
-            self.sum_r_vals.append(sum(i))
-            
-        self.zval = np.reshape(self.avg_r_vals, (30,20))
-           
-        print len(L_array)
-#        plt.contourf(L_array, np.linspace(0.0001, -1.0 * .035 * tan(cone_theta), num_E_per_slice), self.zval )
-        plt.contourf(L_array, range(num_E_per_slice), self.zval )        
-        plt.show()
-        
     def single_sim(self):
         # Generate a single electron pos data 
         # best of 1105.824 at -5000, 5000 [ 0,0.0004, -.03], [0,-5e3, 7e5]
@@ -303,7 +236,7 @@ class all:
 #420^2 + (5e5)^2
             
         num_particles = 1
-        steps = 35000; #350000;
+        steps = 3; #350000;
         bytesize = 16
         iter_nth = 36;
         dt = .0000000000005
@@ -413,79 +346,28 @@ class all:
         self.DIM_SIM.r_vals = self.DIM_SIM.calculator.execute( self.DIM_SIM)
         print "Simulation complete"
         
-        #self.a = self.DIM_SIM.r_vals.reshape((num_particles,steps, 4))
-        
-        
-        self.conf_times = []
-        
-        for p in range(len(self.DIM_SIM.r_vals)) :
-            x_conf = len(np.where( abs(self.DIM_SIM.r_vals[p][:,0]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            y_conf = len(np.where( abs(self.DIM_SIM.r_vals[p][:,1]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            z_conf = len(np.where( abs((coil_2.z_pos/2.0) - self.DIM_SIM.r_vals[p][:,2]) < (coil_2.z_pos/2.0))[0]) * dt * iter_nth * 1e9
-            
-            self.conf_times.append(np.amin([x_conf,y_conf,z_conf]))    
+        self.conf_times = self.get_conf_times(self.DIM_SIM.r_vals, coil_1.radius, coil_2.z_pos, dt, iter_nth) # r_vals, radius, z_pos, dt, iter_nth
+
     
-    
-    
-                              
-    def multi_sim(self):
 
-        coil_1 = self._COIL( radius = .05, current = -6000, z_pos = 0.0 )
-        coil_2 = self._COIL( radius = .05, current = 6000, z_pos = 0.055 )
-        coils = [coil_1.arr, coil_2.arr]
-        
-        # Control parameters        
-        memory = 3000000000 # bytes
-        bytesize = 16
-        
-        num_particles = 10000
-        total_steps = 9000000 # ten million
-        dt = .0000000000002
-
-        mem_p_particle = memory/num_particles # can serve so many bytes to display
-        steps = mem_p_particle/bytesize
-        iter_nth = total_steps/steps
-        print "Steps: ",steps," iter_nth: ", iter_nth
-        
-                                
-        positions = np.tile( [0.000 ,0.0, -0.03, 0.0], (num_particles, 1))
-        velocities = np.tile ([1e2 , 0.0 , .75e6 ,0.0],(num_particles, 1) )
-        positions[:,1] = np.linspace(0.0, 0.01, num_particles)
-        
-        
-        
-        self.MULTI_SIM = self._SIMOBJECT(positions, velocities, coils, num_particles, steps, bytesize = bytesize, iter_nth=iter_nth, dt = dt)
-        self.MULTI_SIM.calculator = self._GPU(path_to_integrator, device_id = 2)
-
-        self.MULTI_SIM.r_vals = self.MULTI_SIM.calculator.execute( self.MULTI_SIM)
-        
-        a = self.MULTI_SIM.r_vals
-        self.conf_times = []
-        
-        for p in range(len(z.MULTI_SIM.r_vals)) :
-            x_conf = len(np.where( abs(self.MULTI_SIM.r_vals[p][:,0]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            y_conf = len(np.where( abs(self.MULTI_SIM.r_vals[p][:,1]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            z_conf = len(np.where( abs((coil_2.z_pos/2.0) - self.MULTI_SIM.r_vals[p][:,2]) < (coil_2.z_pos/2.0))[0]) * dt * iter_nth * 1e9
-            
-            self.conf_times.append(np.amin([x_conf,y_conf,z_conf]))
-        
-
-#        self.graph_trajectory([coil_1, coil_2], a)
-
-        
-        
-        '''
-        x_conf = len(np.where( abs(self.MULTI_SIM.r_vals[0][:,0]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-        y_conf = len(np.where( abs(self.MULTI_SIM.r_vals[0][:,1]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-        z_conf = len(np.where( abs((coil_2.z_pos/2.0) - self.MULTI_SIM.r_vals[0][:,2]) < (coil_2.z_pos/2.0))[0]) * dt * iter_nth * 1e9
-
-        print "Total confinement:", np.amin([x_conf,y_conf,z_conf]), " ns"
-        plt.show()  
-        '''      
-
-path_to_integrator = '/Users/jonkelley/Desktop/Research in Physics/python/gpu_accelerate/potential_optimizer/part1.cl'
-z = all()
 #z.dim_by_dim()
 #z.single_sim()
 #z.EGUNvsDIST()
-z.multi_sim()
+#z.multi_sim()
+path_to_integrator = '/Users/jonkelley/Desktop/electron-optimization/potential_optimizer/part1.cl'
+z = 0;
+
+if __name__ == "__main__":
+    z = all()
+    simulations = {
+        'single':z.single_sim,
+        'main_sim':z.dim_by_dim
+    }
+    if len(sys.argv) == 1:
+        print "single sim"
+        z.single_sim()
+    else:
+        simulations[sys.argv[1]]()
+    
+
+

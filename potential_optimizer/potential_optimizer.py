@@ -1,3 +1,4 @@
+#! /usr/bin/python
 '''
 True Workflow
  - Choose parameter to alter:
@@ -354,7 +355,13 @@ class all:
 #z.single_sim()
 #z.EGUNvsDIST()
 #z.multi_sim()
-path_to_integrator = '/Users/jonkelley/Desktop/electron-optimization/potential_optimizer/part1.cl'
+
+import os
+script_path = os.path.abspath(__file__) # i.e. /path/to/dir/foobar.py
+script_dir = os.path.split(script_path)[0] #i.e. /path/to/dir/
+rel_path = "part1.cl"
+path_to_integrator = os.path.join(script_dir, rel_path)
+
 z = 0;
 
 if __name__ == "__main__":

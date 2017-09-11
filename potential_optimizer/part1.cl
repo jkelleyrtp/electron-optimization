@@ -1,4 +1,9 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#ifdef cl_clang_storage_class_specifiers
+	#pragma OPENCL EXTENSION cl_clang_storage_class_specifiers : enable
+#endif
+
+
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
@@ -8,7 +13,7 @@ inline double4 get_accel(double4 pos, double4 v, float4 coil, int num_coils, __g
 	//float4 coils[2] = {coil1, coil2};
 	//float M_PI = 3.14159265358979323846f;
 
-	float4 coils[2] = {coil};
+	float4 coils[1] = {coil};
 		
 		
 	float E_k = 0.0f;
@@ -58,7 +63,7 @@ inline double4 get_accel(double4 pos, double4 v, float4 coil, int num_coils, __g
 __kernel void compute_trajectory(
 	__global double4* positions,			//xyz, charge/mass
 	__global double4* velocities,		//xyz
-	__global float4* all_coils,
+//	__global float4* all_coils,
 	__global float* ee_tab,
 	__global float* ek_tab,
 	__global float4* dest,

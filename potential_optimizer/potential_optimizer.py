@@ -103,14 +103,15 @@ class all:
             # Prepare input, output, and lookup val buffers
             self.p_buf = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.positions )        # Positions
             self.v_buf = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.velocities )       # Velocities
-            self.coil_buf = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.coils )         # Coils                              
+#            self.coil_buf = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.coils )         # Coils                              
             self.ee = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.ee_table )            # Elliptical Integral 1                                
             self.ek = cl.Buffer(self.ctx,  self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=sim.ek_table )            # Elliptical Integral 2                                                 
             self.d_buf = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, sim.bytesize * sim.num_particles * sim.num_steps)                 # Output r^2 buffer
             self.queue.finish()              
 
             # Run Kernel
-            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, sim.num_coils, sim.dt, sim.iter_nth)
+#            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, sim.num_coils, sim.dt, sim.iter_nth)
+            kernelargs = (self.p_buf, self.v_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, sim.num_coils, sim.dt, sim.iter_nth)
 
             print "Values successfull passed"
             

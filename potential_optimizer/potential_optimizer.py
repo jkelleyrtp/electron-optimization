@@ -329,7 +329,7 @@ class all:
 
 
         self.DIM_SIM = self._SIMOBJECT(positions, velocities, coils, num_particles, steps, bytesize = bytesize, iter_nth=iter_nth, dt = dt)
-        self.DIM_SIM.calculator = self._GPU('//Users/jonkelley/Desktop/Research in Physics/python/gpu_accelerate/potential_optimizer/part1.cl', device_id = device_id)
+        self.DIM_SIM.calculator = self._GPU(path_to_integrator, device_id = device_id)
 
         self.DIM_SIM.r_vals = self.DIM_SIM.calculator.execute( self.DIM_SIM)
         print "Simulation complete"

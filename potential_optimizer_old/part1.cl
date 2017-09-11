@@ -1,14 +1,24 @@
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
+#ifdef cl_clang_storage_class_specifiers
+	#pragma OPENCL EXTENSION cl_clang_storage_class_specifiers : enable
+#endif
+
+
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
 
-inline double4 get_accel(double4 pos, double4 v, float4 coils[6], int num_coils, __global float* ee,__global float* ek) //where factor equals charge/mass
+inline double4 get_accel(double4 pos, double4 v, float4 coil, int num_coils, __global float* ee,__global float* ek) //where factor equals charge/mass
 {
+	//float4 coils[2] = {coil1, coil2};
+	//float M_PI = 3.14159265358979323846f;
 
+	float4 coils[1] = {coil};
+		
+		
 	float E_k = 0.0f;
 	float K_k = 0.0f;
-
+	
 	float4 b = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 	float r = sqrt(pos.x*pos.x + pos.y*pos.y);
 	float z = 0.0f;
@@ -53,12 +63,12 @@ inline double4 get_accel(double4 pos, double4 v, float4 coils[6], int num_coils,
 __kernel void compute_trajectory(
 	__global double4* positions,			//xyz, charge/mass
 	__global double4* velocities,		//xyz
-	__global float4* coils,
+//	__global float4* all_coils,
 	__global float* ee_tab,
 	__global float* ek_tab,
 	__global float4* dest,
-	 int num_particles,
-	 int num_steps,
+  	 int num_particles,
+  	 int num_steps,
 	 int num_coils,
 	 double dt,
 	 int iter_nth
@@ -71,11 +81,9 @@ __kernel void compute_trajectory(
 
 	double4 accel;
 
-// max num of coils is 6
-float4 local_coils[6];
-for(int i = 0; i<6; i++){
-  local_coils[i] = coils[thread*num_coils + i ];
-}
+//	float4 coils[2];
+	
+	float4 coils = (float4)(1.0f,1.0f,1.0f,1.0f);
 
 	//double4 k1, k2, k3, k4, l1, l2, l3, l4;
 
@@ -103,7 +111,7 @@ for(int i = 0; i<6; i++){
 			*/
 
 
-			accel = get_accel(pos, velo, local_coils, num_coils, ee_tab, ek_tab); //returns acceleration
+			accel = get_accel(pos, velo, coils, num_coils, ee_tab, ek_tab); //returns acceleration
 			velo += (accel * dt);
 			pos += (velo * dt);
 

@@ -136,7 +136,7 @@ class all:
         def __init__(self, positions, velocities, coils, num_particles, steps, bytesize=4, iter_nth = 1, dt = .0000000000002, num_coils = 2):
             self.positions = positions.astype(np.float64)
             self.velocities = velocities.astype(np.float64)
-            self.coils = np.array(coils).flatten()
+            self.coils = np.array(coils).astype(np.float32)
             self.num_particles = np.int32(num_particles)
             self.num_steps = np.int32(steps)
             self.bytesize = bytesize

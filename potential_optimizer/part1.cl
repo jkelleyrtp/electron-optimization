@@ -3,7 +3,7 @@
     #define M_PI 3.14159265358979323846
 #endif
 
-inline double4 get_accel(double4 pos, double4 v, float4 coils[6], int num_coils, __global float* ee,__global float* ek) //where factor equals charge/mass
+inline double4 get_accel(double4 pos, double4 v, float4* coils, int num_coils, __global float* ee,__global float* ek) //where factor equals charge/mass
 {
 
 	float E_k = 0.0f;
@@ -71,11 +71,11 @@ __kernel void compute_trajectory(
 
 	double4 accel;
 
-// max num of coils is 6
-float4 local_coils[6];
-for(int i = 0; i<6; i++){
-  local_coils[i] = coils[thread*num_coils + i ];
-}
+  // max num of coils is 6
+  float4 local_coils[6];
+  for(int i = 0; i<6; i++){
+    local_coils[i] = coils[thread*num_coils + i ];
+  }
 
 	//double4 k1, k2, k3, k4, l1, l2, l3, l4;
 

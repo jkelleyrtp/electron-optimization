@@ -62,8 +62,7 @@ __kernel void compute_trajectory(
 	 int num_coils,
 	 double dt,
 	 int iter_nth
-
-){
+   ){
 	unsigned int thread = get_global_id(0);
 
 	double4 pos = positions[thread];

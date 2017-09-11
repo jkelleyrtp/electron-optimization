@@ -113,7 +113,7 @@ class all:
 
             print "Values successfully passed"
 
-            self.program.compute_trajectory(self.queue, (sim.num_particles,), None, *(kernelargs))
+            self.program.compute_trajectory(self.queue, (int(sim.num_particles),), None, *(kernelargs))
 
             print "Kernels started"
 

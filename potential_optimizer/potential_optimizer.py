@@ -283,7 +283,7 @@ class all:
         bytesize = 16
 
         slices = 1000
-        e_per_slice = 20
+        e_per_slice = 30
         num_particles = e_per_slice * slices
         total_steps = 7000000 # ten million
 
@@ -354,7 +354,7 @@ class all:
         coils = [coil_1.arr, coil_2.arr]
 
         # Control parameters
-        memory = 3000000000 # bytes
+        memory = 2800000000 # bytes
         bytesize = 16
 
         num_particles = 10000

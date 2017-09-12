@@ -65,9 +65,9 @@ __kernel void compute_trajectory(
 	double4 pos = positions[thread];
 	double4 velo = velocities[thread];
 
-  int num_steps = sim_properties.y;
-  int iter_nth = sim_properties.z;
-  int num_coils = sim_properties.w;
+  unsigned int num_steps = sim_properties.y;
+  unsigned int iter_nth = sim_properties.z;
+  unsigned int num_coils = sim_properties.w;
 
 
 
@@ -75,8 +75,8 @@ __kernel void compute_trajectory(
 
   // max num of coils is 6
   float4 local_coils[6];
-  for(int i = 0; i<6; i++){
-    local_coils[i] = coils[thread*num_coils + i ];
+  for(int i = 0; i<num_coils; i++){
+    local_coils[i] = coils[thread*num_coils + i];
   }
 
 	//double4 k1, k2, k3, k4, l1, l2, l3, l4;

@@ -202,6 +202,7 @@ class all:
 
     def get_conf_times(self, r_vals, radius, z_pos, dt, iter_nth):
         conf_times = []
+        print radius, z_pos, dt, iter_nth
 
         for p in range(len(r_vals)) :
             x_conf = len(np.where( abs(r_vals[p][:,0]) < radius)[0]) * dt * iter_nth * 1e9
@@ -305,7 +306,7 @@ class all:
 
         coil_1 = self._COIL( radius = .05, current = -5350, z_pos = 0.0 )
         coil_2 = self._COIL( radius = .05, current = 5350, z_pos = 0.055 )
-        coils = np.array([coil_1.arr, coil_2.arr])
+        coils = np.tile(np.array([coil_1.arr, coil_2.arr]), (num_particles,1))
 
         thetas = np.linspace(0.001, radians(e_gun_angle), e_per_slice)
 
@@ -340,21 +341,13 @@ class all:
 
         #self.a = self.DIM_SIM.r_vals.reshape((num_particles,steps, 4))
 
-        self.DIM_SIM.conf_times = self.get_conf_times(self.DIM_SIM.r_vals)
-
-        self.conf_times = []
-
-        for p in range(len(self.DIM_SIM.r_vals)) :
-            x_conf = len(np.where( abs(self.DIM_SIM.r_vals[p][:,0]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            y_conf = len(np.where( abs(self.DIM_SIM.r_vals[p][:,1]) < coil_1.radius)[0]) * dt * iter_nth * 1e9
-            z_conf = len(np.where( abs((coil_2.z_pos/2.0) - self.DIM_SIM.r_vals[p][:,2]) < (coil_2.z_pos/2.0))[0]) * dt * iter_nth * 1e9
-
-            self.conf_times.append(np.amin([x_conf,y_conf,z_conf]))
+        self.DIM_SIM.conf_times = self.get_conf_times(self.DIM_SIM.r_vals, coil_1.radius, coil_2.z_pos, dt, iter_nth)
 
 
 
 
-    def multi_sim(self):
+
+    def multi_sim(self, device_id = 2):
 
         coil_1 = self._COIL( radius = .05, current = -6000, z_pos = 0.0 )
         coil_2 = self._COIL( radius = .05, current = 6000, z_pos = 0.055 )
@@ -381,7 +374,7 @@ class all:
 
 
         self.MULTI_SIM = self._SIMOBJECT(positions, velocities, coils, num_particles, steps, bytesize = bytesize, iter_nth=iter_nth, dt = dt)
-        self.MULTI_SIM.calculator = self._GPU(path_to_integrator, device_id = 2)
+        self.MULTI_SIM.calculator = self._GPU(path_to_integrator, device_id)
 
         self.MULTI_SIM.r_vals = self.MULTI_SIM.calculator.execute( self.MULTI_SIM)
 
@@ -414,7 +407,7 @@ if __name__ == "__main__":
     z = all()
     simulations = {
         'single':z.single_sim,
-        'main_sim':z.dim_by_dim
+        'main':z.dim_by_dim
     }
     if len(sys.argv) == 1:
         print "single sim"
@@ -422,5 +415,5 @@ if __name__ == "__main__":
     else:
         simulations[sys.argv[1]](int(sys.argv[2]))
 
-
+        # hi
         # %run potential_optimizer.py{'single'} {0}

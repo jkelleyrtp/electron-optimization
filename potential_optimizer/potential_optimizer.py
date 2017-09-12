@@ -109,7 +109,7 @@ class all:
             self.queue.finish()
 
             # Run Kernel
-            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.num_particles, sim.num_steps, np.int32(2), sim.dt, sim.iter_nth)
+            kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.ee, self.ek, self.d_buf, sim.sim_properties, sim.dt)
 
             print "Values successfully passed"
 
@@ -132,7 +132,7 @@ class all:
 
 
     class _SIMOBJECT:
-        def __init__(self, positions, velocities, coils, num_particles, steps, bytesize=4, iter_nth = 1, dt = .0000000000002 ):
+        def __init__(self, positions, velocities, coils, num_particles, steps, bytesize=4, iter_nth = 1, dt = .0000000000002, num_coils = 2):
             self.positions = positions.astype(np.float64)
             self.velocities = velocities.astype(np.float64)
             self.coils = np.array(coils).astype(np.float32)
@@ -144,6 +144,10 @@ class all:
 
             self.dt = np.float64(dt)
             self.iter_nth = np.int32(iter_nth)
+            self.num_coils = np.int32(num_coils)
+
+            self.sim_properties = np.asarray([self.num_particles, self.num_steps, self.iter_nth, self.num_coils]).astype(np.int32)
+
 
 
 
@@ -229,7 +233,7 @@ class all:
         print velocities
 
         num_particles = 1
-        steps = 35000; #350000;
+        steps = 350000; #350000;
         bytesize = 16
         iter_nth = 36;
         dt = .0000000000002

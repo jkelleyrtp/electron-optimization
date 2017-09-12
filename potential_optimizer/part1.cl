@@ -57,16 +57,19 @@ __kernel void compute_trajectory(
 	__global float* ee_tab,
 	__global float* ek_tab,
 	__global float4* dest,
-	 int num_particles,
-	 int num_steps,
-	 int num_coils,
-	 double dt,
-	 int iter_nth
-   ){
+  int4 sim_properties, // num_particles, num_steps, iter_nth, num_coils
+	 double dt
+	 ){
 	unsigned int thread = get_global_id(0);
 
 	double4 pos = positions[thread];
 	double4 velo = velocities[thread];
+
+  int num_steps = sim_properties.y;
+  int iter_nth = sim_properties.z;
+  int num_coils = sim_properties.w;
+
+
 
 	double4 accel;
 
@@ -107,9 +110,9 @@ __kernel void compute_trajectory(
 			pos += (velo * dt);
 
 
-
 		}
 		dest[thread*num_steps + iter] = (float4)(pos.x, pos.y, pos.z, 0.0f);
+    //dest[thread*num_steps + iter] = (float4)(sim_properties.x, sim_properties.y, sim_properties.z, sim_properties.w);
 	}
 }
 

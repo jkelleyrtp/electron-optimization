@@ -239,7 +239,7 @@ class all:
         #ct = 20000
         major_R = .014
         #major_R = .006
-        zvelo = 6e7
+        zvelo = 1e6
         coil_1 = self._COIL( radius = .1, current = ct, z_pos = 0.0 )
         coil_2 = self._COIL( radius = .1, current = -ct, z_pos = 0.1)
         #coil_3 = self._COIL( radius = .03, current = 3000, z_pos = 0.06 )
@@ -349,29 +349,28 @@ class all:
         coils[:,2] = coil_current.repeat(2) * mu_0 / (2.0 * coil_radius)
         coils[:,2][1::2] *= -1.0
 
+
         # we want 1000 location points per run
         # 3gb / 1000 = 750000 max_particles per run (memory limited)
 
-#        particles_per_run
-        num_runs = ceil(num_particles / 750000.0 )
+        #particles_per_run
+        ppr = 65536
+        num_runs = int(ceil(num_particles / float(ppr) ))
 
         print "Number of runs required: " + str(num_runs)
         self.simulations = []
         for i in range(int(num_runs)):
-            self.simulations.append( self._SIMOBJECT(positions[750000*i:750000*(i+1)], velocities[750000*i:750000*(i+1)], coils[750000*i:750000*(i+1)], num_particles =500000, steps = 400, num_coils = 2, dt = .0000000000002, bytesize = 16, iter_nth = 3000) )
+            self.simulations.append( self._SIMOBJECT(positions[ppr*i:ppr*(i+1)], velocities[ppr*i:ppr*(i+1)], coils[ppr*i:ppr*(i+1)], num_particles =ppr, steps = 400, num_coils = 2, dt = .0000000000002, bytesize = 16, iter_nth = 10000, c_charge = -1e-12))
 
         print "All simulations created"
 
-        with open('simulations/r_val_OUTPUT.pkl', 'wb') as output:
-            sim_id = 0
-            for sim in self.simulations:
-                print "Running simulation"
+        sim_id = 0
+        for sim in self.simulations:
+            print "Running simulation - " + str(sim_id)
+            if sim_id > -1: # change this id to skip over runs if gpu crashes
                 sim.r_vals = self._GPU(path_to_integrator, device_id).execute(sim) # Returns r_vals
                 np.save("simulations/Simulation - part "+str(sim_id), sim.get_conf_times(store=False))
-                sim_id+=1
-
-
-
+            sim_id+=1
 
         print 'Simulations complete'
 
@@ -383,18 +382,22 @@ class all:
 
 
     def paramspace_per_sc(self, device_id):
-        slices = 40
+        slices = 25
 
         injection_radius = np.linspace(0.0005, 0.005, slices)
-        z_velocitiy = np.linspace(.5e6, 0, slices)
-        coil_current = np.linspace(1000.0, 15000.0, slices)
+        z_velocitiy = np.linspace(.5e6, 5e7, slices)
+        coil_current = np.linspace(5000.0, 15000.0, slices)
         coil_separation = np.linspace(0.03, 0.1, slices)
 
         r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
 
+    def paramspace_detailed(self, device_id):
+        injection_radius = np.linspace(0.0005, 0.01, 100)
+        z_velocitiy = np.linspace(.5e6, 5e7, 100)
+        coil_current = np.linspace(5000.0, 15000.0, 100)
+        coil_separation = np.linspace(0.05, 0.1, 1)
 
-
-
+        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
 
     def gun_v_l(self, device_id=2):
         self.GUN_L = self.generic_simulation(egun_energy=1000, coil_current=40000)
@@ -406,6 +409,28 @@ class all:
         self.GUN_L.r_vals = self.GUN_L.calculator.execute(self.GUN_L)
 
         self.GUN_L.conf_times = self.GUN_L.get_conf_times()
+
+    def gun_v_l(self, device_id=2):
+        self.GUN_L = self.generic_simulation(egun_energy=1000, coil_current=40000)
+
+        position_arr = np.linspace(0, -0.05, self.GUN_L.num_particles )
+        self.GUN_L.positions[:,2] = position_arr
+
+        self.GUN_L.calculator = self._GPU(path_to_integrator, device_id)
+        self.GUN_L.r_vals = self.GUN_L.calculator.execute(self.GUN_L)
+
+        self.GUN_L.conf_times = self.GUN_L.get_conf_times()
+
+
+
+
+
+
+
+
+
+
+
 
 
     def r_v_E(self, device_id = 2):
@@ -431,10 +456,10 @@ class all:
         cc_slices = 100
         ee_slices = 150
         cc = 10000
-        ee = 2000
+        ee = 3000
         row = cc_slices
         col = ee_slices
-        self.GUN_L = self.generic_simulation(num_particles = (row*col), egun_energy=ee, coil_current=cc, e_gun_z = -.03, c_charge = 0)
+        self.GUN_L = self.generic_simulation(num_particles = (row*col), egun_energy=ee, coil_current=cc, e_gun_z = -.03, c_charge = -1e-9)
         v_lin = (np.linspace(.01, 1, col) * self.GUN_L.avg_velo).repeat(row)
         v_lin = (np.linspace(.01, 1, col) * z.GUN_L.avg_velo).repeat(row)
         CC_lin = np.linspace(1, cc, col).repeat(2)
@@ -444,7 +469,7 @@ class all:
         self.GUN_L.positions[:,0] = np.asarray([0.0008]*row*col)
         self.GUN_L.velocities[:,2] = v_lin
         self.GUN_L.coils[:,2] = np.tile(CC_lin, (1,row))
-        self.GUN_L.coils[:,0][1::2] = 0.1
+        self.GUN_L.coils[:,0][1::2] = 0.05
 
         self.GUN_L.calculator = self._GPU(path_to_integrator, device_id)
         self.GUN_L.r_vals = self.GUN_L.calculator.execute(self.GUN_L)
@@ -563,6 +588,7 @@ import os
 script_path = os.path.abspath(__file__) # i.e. /path/to/dir/foobar.py
 script_dir = os.path.split(script_path)[0] #i.e. /path/to/dir/
 rel_path = "part1.cl"
+#rel_path = "trajectory_conf.cl"
 path_to_integrator = os.path.join(script_dir, rel_path)
 
 z = 0;
@@ -576,7 +602,8 @@ if __name__ == "__main__":
         'egunE_v_CC':z.egunE_v_CC,
         'crit_val_show':z.crit_val_show,
         'active_optimizer':z.active_optimizer,
-        'paramspace_per_sc':z.paramspace_per_sc
+        'paramspace_per_sc':z.paramspace_per_sc,
+        'paramspace_detailed':z.paramspace_detailed
 
     }
     if len(sys.argv) == 1:

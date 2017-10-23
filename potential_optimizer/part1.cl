@@ -41,11 +41,7 @@ inline double4 get_accel(double4 pos, double4 v, float4* coils, int num_coils, f
 		b.x += pos.x / r * B_r;
 		b.y += pos.y / r * B_r;
 
-//		b.w = coils[i].z * (1.0f)/( M_PI * sqrt(Q));
 	}
-//1.0e9 * c_sphere*(double4)(sign(pos.x) * pos.x*pos.x/R_2, sign(pos.y) * pos.y*pos.y/R_2, sign(pos.z) * pos.z*pos.z/R_2, 0.0      )
-
-//(np.fmin(x/(R**3), 1.0/(R**2))+ np.fmin(1.0/(x*x), 1.0/(R*R)) -  1.0/(R*R))*k*q
 
   double q = c_sphere * (fmin(sqrt(R_2)/(CR*CR*CR), 1.0/(CR*CR)) + fmin(1.0/R_2, 1.0/(CR*CR)) - 1.0/(CR*CR));
   double4 e_field = q * 8.99e9 * (double4)(sign(pos.x) * pos.x*pos.x/R_2, sign(pos.y) * pos.y*pos.y/R_2, sign(pos.z) * pos.z*pos.z/R_2, 0.0);
@@ -90,7 +86,7 @@ __kernel void compute_trajectory(
 		for (unsigned int sub_int = 0; sub_int < iter_nth; sub_int++){
 
 			//Runge Kutta 4th Order
-      /*
+
 			k1 = dt * get_accel(pos, velo, local_coils, num_coils, c_sphere, ee_tab, ek_tab);
 			l1 = dt * velo;
 
@@ -105,15 +101,15 @@ __kernel void compute_trajectory(
 
 			velo += (k1 + (2.0f*k2) + (2.0f*k3) +k4)/6.0f;
 			pos += (l1 + (2.0f*l2) + (2.0f*l3) +l4)/6.0f;
-      */
 
+      /*
+      Euler's Method
 			accel = get_accel(pos, velo, local_coils, num_coils, c_sphere, ee_tab, ek_tab); //returns acceleration
 			velo += (accel * dt);
 			pos += (velo * dt);
-
+      */
 		}
 		dest[thread*num_steps + iter] = (float4)(pos.x, pos.y, pos.z, accel.w);
-    //dest[thread*num_steps + iter] = (float4)(sim_properties.x, sim_properties.y, sim_properties.z, sim_properties.w);
 	}
 }
 
@@ -127,11 +123,4 @@ Device Info:
 657 MHz
 float4s favored
 
-(8.99e9L/(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z)) gives |r|
-
-# point charge until in spheres
-
-
-k = 8.99e9
-q = 1e-6
 */

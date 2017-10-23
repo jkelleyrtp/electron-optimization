@@ -1,0 +1,40 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+e_charge = 1.6e-19  # Coulombs
+e_mass = 9.1e-31    # Kilograms
+
+positions = []
+
+accel = np.array([0.0,0.0,0.0])
+b = np.array([0.5,0.5,0.5])
+
+v = np.array([1e3,0.0,1e3])
+p =np.array([0.0,0.0,0.5])
+
+dt = .00000000000002
+for i in range(1000000):
+    accel = np.asarray([v[1] * b[2] - v[2] * b[1], v[2] * b[0] - v[0] * b[2], v[0] * b[1] - v[1] * b[0]])* -175882002272.0
+    v += (accel * dt)
+    p += (v * dt)
+    positions.append(p)
+
+
+
+
+positions = np.asarray(positions)
+
+steps = len(positions)
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(positions[:,0], positions[:,1], zs= positions[:,2])
+plt.show()
+
+#ax.set_xlim([r, r * -1])
+#ax.set_ylim([r, r * -1])
+#ax.set_zlim([0, coil_2[0]])
+
+#ax.scatter(positions[0][0],positions[0][1],positions[0][2], color="green")
+
+#ax.scatter(positions[steps-2][0],positions[steps-2][1],positions[steps-2][2], color="red")

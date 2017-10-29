@@ -9,7 +9,7 @@ from math import sqrt,sin,cos,atan2, sqrt, pi
 from scipy.special import ellipk, ellipe
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-
+import seaborn as sb
 
 # Variables
 duration_steps = 5e3#1e6
@@ -62,7 +62,7 @@ class coil:
 
 
 first_coil = coil(radius = 0.035,
-                  current =100.0, # Currently num turns does nothing!!
+                  current =1000.0, # Currently num turns does nothing!!
                   position=np.array([0.0,0.0,0.0]),
                   plane_axis = 0,
                   num_turns = 1,
@@ -70,7 +70,7 @@ first_coil = coil(radius = 0.035,
                   )
 
 second_coil = coil(radius = 0.035,
-                  current = -100.0, # Currently num turns does nothing!!
+                  current = -1000.0, # Currently num turns does nothing!!
                   position=np.array([0.0,0.0,0.05]),
                   plane_axis = 0,
                   num_turns = 1,
@@ -86,8 +86,8 @@ def gcfp(x,y,z):
 
 gcfp = np.vectorize(gcfp)
 
-x = np.linspace(-.05, .05, 200)
-y = np.linspace(-.025, .075, 200)
+x = np.linspace(-.05, .05, 500)
+y = np.linspace(-.025, .075, 500)
 xx, yy = np.meshgrid(x, y)
 B_x_1, B_y_1 = gcfp1(xx,0,yy)
 B_x_2, B_y_2 = gcfp2(xx,0,yy)
@@ -96,15 +96,28 @@ B_x = B_x_1+B_x_2
 B_y = B_y_1+B_y_2
 #z = np.sin(xx**2 + yy**2) / (xx**2 + yy**2)
 
-plt.figure()
+fig = plt.figure()
 #plt.contourf(x,y,z)
 plt.margins(0, 0)
 
-color = np.log(B_x**2 + B_y**2)
+color = -1.0 * np.sqrt(B_x**2.0 + B_y**2.0)
 
-strm = plt.streamplot(x, y, B_x, B_y, density = 3, cmap='autumn')
+#sb.heatmap(color)
+strm = plt.streamplot(x, y, B_x, B_y, density = 1.2, cmap=plt.cm.plasma, color='#3f5296')
+im = plt.imshow(color, cmap=plt.cm.plasma, extent=(-0.05, 0.05, .075, -.025), vmin = 2.0, vmax = 10.0, interpolation='nearest')#, vmin = 0.002, vmin = 0.0)
+
+#cbar = fig.colorbar(color, ticks=[0, 1, 2], ax = plt.gca())
+#cbar.ax.set_yticklabels(['Low', 'Medium', 'High'])
+
+#p = plt.gca().pcolor(xx, yy, color, cmap='gray', vmin=abs(color).min(), vmax=abs(color).max())
+
+
 #plt.colorbar(strm.lines)
 #plt.clim(vmax = .75, vmin = -.75)
-plt.figure()
-plt.contour(x,y,color)
+#plt.figure()
+#plt.contour(x,y,color)
 plt.show()
+
+# cb = plt.gcf().colorbar(im,ticks=np.array([3, 6, 9]) )
+# cb.ax.invert_yaxis()
+# cb.ax.set_yticklabels(['Low', 'Medium', 'High'][::-1])

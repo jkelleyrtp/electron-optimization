@@ -115,6 +115,8 @@ class all:
             # Run Kernel
             kernelargs = (self.p_buf, self.v_buf, self.coil_buf, self.c_spheres_buf, self.ee, self.ek, self.d_buf, sim.sim_properties, sim.dt)
 
+#program.compute_trajectory(queue, (1,), None, np.array([0.0,0.01,0.01]), np.array([1.0,1.0,500000]), np.array([0,.0375,.1,0.0,.05,0.0375,-.1,0.0]), np.array([1]), np.array([1]), np.array())
+
             if quiet!=True: print "Values successfully passed"
 
             self.program.compute_trajectory(self.queue, (int(sim.num_particles),), None, *(kernelargs))
@@ -398,6 +400,17 @@ class all:
         coil_separation = np.linspace(0.05, 0.1, 1)
 
         r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
+
+
+    def paramspace_single(self, device_id):
+        injection_radius = np.linspace(0.0001, 0.018, 1000)
+        z_velocitiy = np.linspace(1e6, 5e7, 1)
+        coil_current = np.linspace(5000.0, 15000.0, 1)
+        coil_separation = np.linspace(0.05, 0.1, 1)
+
+        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
+
+
 
     def gun_v_l(self, device_id=2):
         self.GUN_L = self.generic_simulation(egun_energy=1000, coil_current=40000)

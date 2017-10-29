@@ -399,7 +399,7 @@ class all:
         coil_current = np.linspace(5000.0, 15000.0, 100)
         coil_separation = np.linspace(0.05, 0.1, 1)
 
-        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
+        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation], device_id)
 
 
     def paramspace_single(self, device_id):
@@ -408,7 +408,7 @@ class all:
         coil_current = np.linspace(5000.0, 15000.0, 1)
         coil_separation = np.linspace(0.05, 0.1, 1)
 
-        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation])
+        r_vals = self.nd_paramspace([injection_radius,z_velocitiy,coil_current,coil_separation],device_id)
 
 
 
@@ -616,7 +616,8 @@ if __name__ == "__main__":
         'crit_val_show':z.crit_val_show,
         'active_optimizer':z.active_optimizer,
         'paramspace_per_sc':z.paramspace_per_sc,
-        'paramspace_detailed':z.paramspace_detailed
+        'paramspace_detailed':z.paramspace_detailed,
+	'paramspace_single':z.paramspace_single
 
     }
     if len(sys.argv) == 1:
